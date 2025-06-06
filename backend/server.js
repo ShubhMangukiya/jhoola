@@ -1,47 +1,56 @@
 const express = require('express');
 const cors = require('cors');
 const sequelize = require('./config/db');
-const categoryRoutes = require('./routes/categories');
-const productRoutes = require('./routes/products');
-const userRoutes = require('./routes/user');
-const cartRoutes = require('./routes/cart');
-const wishlistRoutes = require('./routes/wishlist');
-const reviewRoutes = require('./routes/review');
-const orderRoutes = require('./routes/order'); // Add order routes
-const path = require('path');
 
 const app = express();
+const port = 4003;
 
-// Middleware
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+// Load models & associations
+const { Product, Category, Color, ProductImage,Cart,Wishlist } = require('./model/index');
+
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static('uploads'));
 
-// Serve uploaded images statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Routes
+const authRoutes = require('./routes/authRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+const colorRoutes = require('./routes/colorRoutes');
+const productRoutes = require('./routes/productRoutes');
+const cartRoutes=require('./routes/cartRoutes')
+const wishlistRoutes=require('./routes/wishlistRoutes')
+const orderRoutes=require('./routes/orderRoutes')
+const razorpayRoutes=require('./routes/razorpayRoutes')
+const instagramRoutes=require('./routes/instagramRoutes')
+const sliderRoutes=require('./routes/sliderRoutes')
+const videoRoutes=require('./routes/videoRoutes')
+const reviewRoutes=require('./routes/reviewRoutes')
 
-// Mount all routes
+app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/color', colorRoutes);
 app.use('/api/products', productRoutes);
-app.use('/api/user', userRoutes);
-app.use('/api/cart', cartRoutes);
-app.use('/api/wishlist', wishlistRoutes);
+app.use('/cart', cartRoutes);
+app.use('/wishlist', wishlistRoutes);
+app.use('/order', orderRoutes);
+app.use('/razorpay', razorpayRoutes);
+app.use('/api/instagram', instagramRoutes);
+app.use('/api/slider', sliderRoutes);
+app.use('/api/video', videoRoutes);
 app.use('/api/reviews', reviewRoutes);
-app.use('/api/orders', orderRoutes); // Add orders route
 
-console.log('Routes mounted for /api/categories, /api/products, /api/user, /api/cart, /api/wishlist, /api/reviews, and /api/orders');
+// 404 fallback
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route Not Found', status: 404 });
+});
 
-// Sync database
-sequelize.sync({ force: false })
-  .then(() => console.log('Database synced successfully'))
-  .catch(err => console.error('Error syncing database:', err));
-
-console.log('Server starting...');
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Sync & start
+sequelize.sync({ alter: true }).then(() => {
+  console.log('✅ DB Synced');
+  app.listen(port, () => {
+  console.log(`Server is running on port ${process.env.PORT}`);
+  });
+}).catch(err => {
+  console.error('DB Sync Error:', err);
+});
